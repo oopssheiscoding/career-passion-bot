@@ -2,8 +2,8 @@ import streamlit as st
 
 # 页面配置 - 必须放在最前面
 st.set_page_config(
-    page_title="AI创业助理",
-    page_icon="✨",
+    page_title="AISIS",
+    page_icon="👭",
     layout="centered",
     initial_sidebar_state="expanded",
 )
@@ -14,35 +14,23 @@ import json
 import time
 from data.resources import RESOURCES, FREELANCE_TYPES
 
-# 加载环境变量 - 从.env文件
+# 加载环境变量
 load_dotenv()
-# API密钥从环境变量获取，而不是硬编码
+
+# 获取API密钥
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
-# 初始化API客户端
+# 检查API密钥是否有效
 ANTHROPIC_API_AVAILABLE = False
-client = None
-
-try:
-    import anthropic
-    # 尝试直接创建客户端
-    client = anthropic.Anthropic()
-    
-    # 简单测试API连接
-    test_message = client.messages.create(
-        model="claude-3-haiku-20240307",
-        max_tokens=10,
-        messages=[
-            {"role": "user", "content": "Hello"}
-        ]
-    )
-    
-    if test_message and test_message.content:
+if ANTHROPIC_API_KEY and ANTHROPIC_API_KEY.startswith("sk-ant"):
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         ANTHROPIC_API_AVAILABLE = True
-        print("✅ Anthropic API 连接成功!")
-        print(f"测试响应: {test_message.content[0].text}")
-except Exception as e:
-    print(f"❌ Anthropic API 连接失败: {e}")
+    except Exception as e:
+        st.error(f"Anthropic API 初始化失败: {e}")
+        client = None
+else:
     client = None
 
 # 自定义CSS
@@ -213,15 +201,8 @@ st.markdown("""
     .unified-width {
         width: 90%;
         max-width: 700px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    
-    /* 调整Streamlit容器的宽度 */
-    .block-container {
-        max-width: 800px;
-        padding-left: 1rem;
-        padding-right: 1rem;
+        margin: 0 auto;
+        text-align: center;
     }
     
     /* 移动设备适配 */
@@ -252,13 +233,69 @@ st.markdown("""
         .stButton button {
             min-height: 44px !important;
         }
+        
+        /* 移动设备上的关闭按钮增强 */
+        [data-testid="stSidebar"] [data-testid="baseButton-headerNoPadding"] {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            right: 10px !important;
+            top: 10px !important;
+            background-color: #f8f8f8 !important;
+            border-radius: 50% !important;
+            padding: 8px !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+            z-index: 2000 !important;
+            width: 40px !important;
+            height: 40px !important;
+            opacity: 1 !important;
+        }
+        
+        /* 修复侧边栏X按钮 */
+        .sidebar-close-button svg,
+        [data-testid="stSidebar"] [data-testid="baseButton-headerNoPadding"] svg {
+            color: #333 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: block !important;
+            width: 20px !important;
+            height: 20px !important;
+        }
+        
+        /* 强制显示关闭按钮，无论侧边栏状态 */
+        section[data-testid="stSidebar"] > div {
+            position: relative !important;
+        }
+        
+        section[data-testid="stSidebar"][aria-expanded="true"] [data-testid="baseButton-headerNoPadding"] {
+            z-index: 2001 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
     }
     
-    /* PWA 支持 - 添加全屏体验 */
-    @media all and (display-mode: standalone) {
-        body {
-            margin: 0;
-            padding: 0;
+    /* 处理移动设备横屏方向 */
+    @media (max-width: 992px) and (orientation: landscape) {
+        /* 确保在横屏模式下侧边栏关闭按钮也可见 */
+        [data-testid="stSidebar"] [data-testid="baseButton-headerNoPadding"] {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            right: 10px !important;
+            top: 10px !important;
+            background-color: #f8f8f8 !important;
+            border-radius: 50% !important;
+            padding: 8px !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+            z-index: 2100 !important;
+            width: 40px !important;
+            height: 40px !important;
+        }
+        
+        /* 确保侧边栏内容不会遮挡关闭按钮 */
+        section[data-testid="stSidebar"] > div {
+            padding-top: 40px !important;
         }
     }
 </style>
@@ -288,27 +325,23 @@ if 'waiting_for_ai' not in st.session_state:
 if 'user_message_to_process' not in st.session_state:
     st.session_state.user_message_to_process = None
 
-# 添加一个标志来跟踪欢迎消息是否已显示
-if 'welcome_shown' not in st.session_state:
-    st.session_state.welcome_shown = False
-
 # 标题设置在统一宽度的容器中
 st.markdown('<div class="unified-width">', unsafe_allow_html=True)
 st.markdown('<p class="main-header">👭AISIS</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">与AI对话，发现热爱与擅长，创造自由生活</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">与AI对话，发掘你热爱的创业机会，实现自由职业梦想</p>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # 显示API状态
 if not ANTHROPIC_API_AVAILABLE:
-    st.markdown('<div class="unified-width warning">⚠️ 啊哦，你的AI小姐妹出了一点技术问题，对话能力可能不太行，请允许我手刀前往修复！</div>', unsafe_allow_html=True)
+    st.markdown('<div class="unified-width warning">⚠️ 啊哦，你的AI小姐妹出了点技术问题，对话能力不太行，请稍等我在手刀修复中</div>', unsafe_allow_html=True)
 
 # 预设欢迎消息
 DEFAULT_WELCOME_MESSAGE = """
 姐妹！很高兴见到你 👋
 
-我是你的AI创业小姐妹，我想帮你找到擅长且热爱的领域，陪你走向自由的创业之路。
+我是你的创业小助理AISIS，我想帮你发现你热爱且擅长的创业机会，发挥个人优势迈向自由的创业之路。
 
-可以告诉我，你对哪方面的事更感兴趣吗？或者，你现在面临什么样的创业困惑？没有具体想法也没关系，我会陪你一起发现～
+可以告诉我，你对哪方面的创业项目感兴趣吗？或者，你现在面临什么样的创业困惑？暂时没有具体想法也没关系，我会陪你一起找！
 """
 
 # 预设回复
@@ -331,15 +364,36 @@ with chat_container:
             st.markdown(f'<div class="bot-message">{message["content"]}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# 开始新对话 - 修正欢迎消息显示逻辑
-if not st.session_state.messages and not st.session_state.welcome_shown:
-    # 直接显示预设的欢迎消息，不调用API
-    st.session_state.messages.append({"role": "assistant", "content": DEFAULT_WELCOME_MESSAGE})
-    st.session_state.welcome_shown = True
-    # 显示API不可用提示（如果API不可用）
-    if not ANTHROPIC_API_AVAILABLE:
-        st.warning("⚠️ 你的AI小伙伴暂时开小差了，请10分钟后再回来试试吧。")
-    st.rerun()
+# 开始新对话
+if not st.session_state.messages:
+    if ANTHROPIC_API_AVAILABLE:
+        with st.spinner("AI助手正在思考..."):
+            try:
+                welcome_response = client.messages.create(
+                    model="claude-3-haiku-20240307",
+                    max_tokens=1000,
+                    system="""你是一位温暖、善解人意的创业助理，专门帮助女性发现适合自己的创业机会，并引导她们迈向成功的创业之路。
+你的目标用户是所有想要开创自己事业的女性，她们有热情、有动力、有创造力，但可能不知道如何开始。
+
+在对话中，请使用亲切、鼓励的语气，创造安全的交流空间。通过开放性问题引导用户自我探索，帮助用户发现潜在的创业领域和个人优势。""",
+                    messages=[
+                        {"role": "user", "content": "你好，我想探索适合我的创业方向"},
+                    ]
+                )
+                welcome_message = welcome_response.content[0].text
+                st.session_state.messages.append({"role": "assistant", "content": welcome_message})
+                st.rerun()
+            except Exception as e:
+                st.error(f"API调用错误: {e}")
+                st.session_state.messages.append({"role": "assistant", "content": DEFAULT_WELCOME_MESSAGE})
+                # 显示API不可用提示
+                st.warning("⚠️ 你的AI小姐妹暂时开小差了，请10分钟后再回来试试吧。")
+                st.rerun()
+    else:
+        st.session_state.messages.append({"role": "assistant", "content": DEFAULT_WELCOME_MESSAGE})
+        # 显示API不可用提示
+        st.warning("⚠️ 你的AI小姐妹暂时开小差了，请10分钟后再回来试试吧。")
+        st.rerun()
 
 # 如果有待处理的用户消息，则生成AI回复
 if st.session_state.waiting_for_ai and st.session_state.user_message_to_process:
@@ -413,7 +467,7 @@ if st.session_state.waiting_for_ai and st.session_state.user_message_to_process:
                 st.session_state.user_message_to_process = None
                 
                 # 显示API不可用提示
-                st.warning("⚠️ 你的AI小伙伴暂时开小差了，请10分钟后再回来试试吧。")
+                st.warning("⚠️ 你的AI小姐妹暂时开小差了，请10分钟后再回来试试吧。")
                 
                 st.rerun()
     else:
@@ -430,7 +484,7 @@ if st.session_state.waiting_for_ai and st.session_state.user_message_to_process:
         st.session_state.user_message_to_process = None
         
         # 显示API不可用提示
-        st.warning("⚠️ 你的AI小伙伴暂时开小差了，请10分钟后再回来试试吧。")
+        st.warning("⚠️ 你的AI小姐妹暂时开小差了，请10分钟后再回来试试吧。")
         
         st.rerun()
 
@@ -560,7 +614,7 @@ if st.session_state.current_freelance_type:
 
 # 重置对话
 if st.sidebar.button("开始新对话"):
-    for key in ['messages', 'resources_shown', 'current_freelance_type', 'current_field', 'waiting_for_ai', 'user_message_to_process', 'welcome_shown']:
+    for key in ['messages', 'resources_shown', 'current_freelance_type', 'current_field', 'waiting_for_ai', 'user_message_to_process']:
         if key in st.session_state:
             del st.session_state[key]
     st.rerun()
@@ -584,20 +638,53 @@ with st.sidebar:
     4. 随时开始新对话讨论新的idea
     """)
     
-    st.markdown("## 移动应用安装")
-    st.markdown("""
-    ### iOS用户
-    1. 在Safari中打开应用
-    2. 点击底部的"分享"按钮
-    3. 选择"添加到主屏幕"
-    
-    ### Android用户
-    1. 在Chrome中打开应用
-    2. 点击菜单(三个点)
-    3. 选择"添加到主屏幕"
-    """)
-    
     st.markdown("## 数据隐私")
     st.markdown("""
     所有对话内容仅用于为你提供个性化建议，不会被永久存储或用于其他目的。
-    """) 
+    """)
+
+# 添加JavaScript代码实现点击页面空白处关闭侧边栏功能（移动设备友好）
+st.markdown("""
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 获取主内容区域元素
+    const mainContent = document.querySelector('.main');
+    
+    // 检测页面宽度是否为移动设备
+    function isMobile() {
+        return window.innerWidth <= 768;
+    }
+    
+    // 监听主内容区域的点击事件
+    if (mainContent) {
+        mainContent.addEventListener('click', function(e) {
+            // 只在移动设备上执行
+            if (isMobile()) {
+                // 获取侧边栏元素
+                const sidebar = document.querySelector('[data-testid="stSidebar"]');
+                
+                // 检查侧边栏是否已展开
+                if (sidebar && sidebar.getAttribute('aria-expanded') === 'true') {
+                    // 寻找关闭按钮并模拟点击
+                    const closeButton = sidebar.querySelector('[data-testid="baseButton-headerNoPadding"]');
+                    if (closeButton) {
+                        closeButton.click();
+                    }
+                }
+            }
+        });
+    }
+    
+    // 添加额外的超时处理，确保在Streamlit完全加载后执行
+    setTimeout(function() {
+        // 确保侧边栏关闭按钮具有足够高的z-index
+        const closeButton = document.querySelector('[data-testid="stSidebar"] [data-testid="baseButton-headerNoPadding"]');
+        if (closeButton) {
+            closeButton.style.zIndex = '9999';
+            closeButton.style.opacity = '1';
+            closeButton.style.visibility = 'visible';
+        }
+    }, 1000);
+});
+</script>
+""", unsafe_allow_html=True)
